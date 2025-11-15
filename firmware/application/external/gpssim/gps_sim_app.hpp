@@ -88,9 +88,16 @@ class GpsSimAppView : public View {
     Text text_filename{
         {11 * 8, UI_POS_Y(0), 12 * 8, 16},
         "-"};
-    Text text_sample_rate{
-        {24 * 8, UI_POS_Y(0), 6 * 8, 16},
-        "-"};
+    NumberField field_sample_rate{
+        {24 * 8, UI_POS_Y(0)},
+        5,
+        {1000, 20000},
+        100,
+        ' ',
+        true};
+    Text text_sample_rate_unit{
+        {29 * 8, UI_POS_Y(0), 3 * 8, 16},
+        "kHz"};
 
     Text text_duration{
         {11 * 8, 1 * 16, 6 * 8, 16},

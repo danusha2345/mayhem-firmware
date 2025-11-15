@@ -65,10 +65,11 @@ void GpsSimAppView::on_file_changed(const fs::path& new_file_path) {
     if (metadata) {
         field_frequency.set_value(metadata->center_frequency);
         transmitter_model.set_sampling_rate(metadata->sample_rate);
+        // Convert Hz to kHz for display
+        field_sample_rate.set_value(metadata->sample_rate / 1000);
     }
 
     // UI Fixup.
-    text_sample_rate.set(unit_auto_scale(transmitter_model.sampling_rate(), 3, 1) + "Hz");
     progressbar.set_max(file_size);
     text_filename.set(truncate(file_path.filename().string(), 12));
 
@@ -168,7 +169,8 @@ GpsSimAppView::GpsSimAppView(
     add_children({
         &button_open,
         &text_filename,
-        &text_sample_rate,
+        &field_sample_rate,
+        &text_sample_rate_unit,
         &text_duration,
         &progressbar,
         &field_frequency,
@@ -179,6 +181,24 @@ GpsSimAppView::GpsSimAppView(
     });
 
     field_frequency.set_step(5000);
+
+    // Set default sample rate from radio state (Hz to kHz)
+    field_sample_rate.set_value(transmitter_model.sampling_rate() / 1000);
+
+    // Handle sample rate changes (value is in kHz)
+    field_sample_rate.on_change = [this](int32_t value) {
+        uint32_t sample_rate_hz = value * 1000;  // Convert kHz to Hz
+        transmitter_model.set_sampling_rate(sample_rate_hz);
+        // Update duration if file is loaded
+        if (!file_path.empty()) {
+            File data_file;
+            if (!data_file.open(file_path)) {
+                auto file_size = data_file.size();
+                auto duration = ms_duration(file_size, transmitter_model.sampling_rate(), 2);
+                text_duration.set(to_string_time_ms(duration));
+            }
+        }
+    };
 
     button_play.on_select = [this](ImageButton&) {
         this->toggle();
