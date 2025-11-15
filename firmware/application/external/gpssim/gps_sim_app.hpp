@@ -61,8 +61,7 @@ class GpsSimAppView : public View {
     app_settings::SettingsManager settings_{
         "tx_gps", app_settings::Mode::TX};
 
-    void set_sample_rate_from_fields();
-    void update_sample_rate_fields_from_hz(uint32_t sample_rate_hz);
+    void update_sample_rate_button();
 
     static constexpr ui::Dim header_height = 3 * 16;
 
@@ -91,26 +90,9 @@ class GpsSimAppView : public View {
     Text text_filename{
         {11 * 8, UI_POS_Y(0), 12 * 8, 16},
         "-"};
-    NumberField field_sample_rate_int{
-        {24 * 8, UI_POS_Y(0)},
-        2,
-        {1, 20},
-        1,
-        ' ',
-        true};
-    Text text_sample_rate_dot{
-        {26 * 8, UI_POS_Y(0), 1 * 8, 16},
-        "."};
-    NumberField field_sample_rate_dec{
-        {27 * 8, UI_POS_Y(0)},
-        1,
-        {0, 9},
-        1,
-        '0',
-        true};
-    Text text_sample_rate_unit{
-        {28 * 8, UI_POS_Y(0), 3 * 8, 16},
-        "MHz"};
+    Button button_sample_rate{
+        {24 * 8, UI_POS_Y(0), 7 * 8, 16},
+        "2.6 MHz"};
 
     Text text_duration{
         {11 * 8, 1 * 16, 6 * 8, 16},

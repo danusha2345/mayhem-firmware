@@ -65,8 +65,8 @@ void GpsSimAppView::on_file_changed(const fs::path& new_file_path) {
     if (metadata) {
         field_frequency.set_value(metadata->center_frequency);
         transmitter_model.set_sampling_rate(metadata->sample_rate);
-        // Update sample rate fields from metadata
-        update_sample_rate_fields_from_hz(metadata->sample_rate);
+        // Update sample rate button from metadata
+        update_sample_rate_button();
     }
 
     // UI Fixup.
@@ -169,10 +169,7 @@ GpsSimAppView::GpsSimAppView(
     add_children({
         &button_open,
         &text_filename,
-        &field_sample_rate_int,
-        &text_sample_rate_dot,
-        &field_sample_rate_dec,
-        &text_sample_rate_unit,
+        &button_sample_rate,
         &text_duration,
         &progressbar,
         &field_frequency,
@@ -184,17 +181,32 @@ GpsSimAppView::GpsSimAppView(
 
     field_frequency.set_step(5000);
 
-    // Set default sample rate from radio state
-    update_sample_rate_fields_from_hz(transmitter_model.sampling_rate());
+    // Set default sample rate button text
+    update_sample_rate_button();
 
-    // Handle sample rate changes (integer part)
-    field_sample_rate_int.on_change = [this](int32_t) {
-        set_sample_rate_from_fields();
-    };
-
-    // Handle sample rate changes (decimal part)
-    field_sample_rate_dec.on_change = [this](int32_t) {
-        set_sample_rate_from_fields();
+    // Handle sample rate button click - open keypad for input
+    button_sample_rate.on_select = [this, &nav](Button&) {
+        // Convert current sample rate from Hz to MHz for display (divide by 1M)
+        auto current_mhz = transmitter_model.sampling_rate() / 1000;  // Show as kHz in keypad
+        auto freq_view = nav.push<FrequencyKeypadView>(current_mhz);
+        freq_view->on_changed = [this](rf::Frequency new_value_khz) {
+            // Convert from kHz back to Hz
+            uint32_t sample_rate_hz = new_value_khz * 1000;
+            // Clamp to reasonable range (1-20 MHz)
+            if (sample_rate_hz < 1000000) sample_rate_hz = 1000000;
+            if (sample_rate_hz > 20000000) sample_rate_hz = 20000000;
+            transmitter_model.set_sampling_rate(sample_rate_hz);
+            update_sample_rate_button();
+            // Update duration if file is loaded
+            if (!file_path.empty()) {
+                File data_file;
+                if (!data_file.open(file_path)) {
+                    auto file_size = data_file.size();
+                    auto duration = ms_duration(file_size, transmitter_model.sampling_rate(), 2);
+                    text_duration.set(to_string_time_ms(duration));
+                }
+            }
+        };
     };
 
     button_play.on_select = [this](ImageButton&) {
@@ -232,32 +244,14 @@ void GpsSimAppView::set_parent_rect(const Rect new_parent_rect) {
     waterfall.set_parent_rect(waterfall_rect);
 }
 
-void GpsSimAppView::set_sample_rate_from_fields() {
-    // Get values from both fields and combine (e.g., 2.6 MHz = 2600000 Hz)
-    int32_t int_part = field_sample_rate_int.value();
-    int32_t dec_part = field_sample_rate_dec.value();
-    uint32_t sample_rate_hz = (int_part * 1000000) + (dec_part * 100000);
+void GpsSimAppView::update_sample_rate_button() {
+    // Convert Hz to MHz with one decimal place (e.g., 2600000 Hz = "2.6 MHz")
+    uint32_t sample_rate_hz = transmitter_model.sampling_rate();
+    uint32_t mhz_int = sample_rate_hz / 1000000;
+    uint32_t mhz_frac = (sample_rate_hz % 1000000) / 100000;
 
-    transmitter_model.set_sampling_rate(sample_rate_hz);
-
-    // Update duration if file is loaded
-    if (!file_path.empty()) {
-        File data_file;
-        if (!data_file.open(file_path)) {
-            auto file_size = data_file.size();
-            auto duration = ms_duration(file_size, transmitter_model.sampling_rate(), 2);
-            text_duration.set(to_string_time_ms(duration));
-        }
-    }
-}
-
-void GpsSimAppView::update_sample_rate_fields_from_hz(uint32_t sample_rate_hz) {
-    // Convert Hz to MHz with one decimal place (e.g., 2600000 Hz = 2.6 MHz)
-    int32_t int_part = sample_rate_hz / 1000000;           // Integer part (MHz)
-    int32_t dec_part = (sample_rate_hz % 1000000) / 100000;  // First decimal digit
-
-    field_sample_rate_int.set_value(int_part);
-    field_sample_rate_dec.set_value(dec_part);
+    std::string rate_str = to_string_dec_uint(mhz_int) + "." + to_string_dec_uint(mhz_frac) + " MHz";
+    button_sample_rate.set_text(rate_str);
 }
 
 } /* namespace ui::external_app::gpssim */
