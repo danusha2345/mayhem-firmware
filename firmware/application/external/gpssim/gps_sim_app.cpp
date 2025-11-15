@@ -65,8 +65,8 @@ void GpsSimAppView::on_file_changed(const fs::path& new_file_path) {
     if (metadata) {
         field_frequency.set_value(metadata->center_frequency);
         transmitter_model.set_sampling_rate(metadata->sample_rate);
-        // Convert Hz to kHz for display
-        field_sample_rate.set_value(metadata->sample_rate / 1000);
+        // Convert Hz to 0.1 MHz units for display
+        field_sample_rate.set_value(metadata->sample_rate / 100000);
     }
 
     // UI Fixup.
@@ -182,12 +182,12 @@ GpsSimAppView::GpsSimAppView(
 
     field_frequency.set_step(5000);
 
-    // Set default sample rate from radio state (Hz to kHz)
-    field_sample_rate.set_value(transmitter_model.sampling_rate() / 1000);
+    // Set default sample rate from radio state (Hz to 0.1 MHz units)
+    field_sample_rate.set_value(transmitter_model.sampling_rate() / 100000);
 
-    // Handle sample rate changes (value is in kHz)
+    // Handle sample rate changes (value is in 0.1 MHz units)
     field_sample_rate.on_change = [this](int32_t value) {
-        uint32_t sample_rate_hz = value * 1000;  // Convert kHz to Hz
+        uint32_t sample_rate_hz = value * 100000;  // Convert 0.1 MHz to Hz
         transmitter_model.set_sampling_rate(sample_rate_hz);
         // Update duration if file is loaded
         if (!file_path.empty()) {

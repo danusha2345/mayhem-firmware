@@ -90,14 +90,14 @@ class GpsSimAppView : public View {
         "-"};
     NumberField field_sample_rate{
         {24 * 8, UI_POS_Y(0)},
-        5,
-        {1000, 20000},
-        100,
+        3,
+        {10, 200},
+        1,
         ' ',
         true};
     Text text_sample_rate_unit{
-        {29 * 8, UI_POS_Y(0), 3 * 8, 16},
-        "kHz"};
+        {27 * 8, UI_POS_Y(0), 6 * 8, 16},
+        "x0.1MHz"};
 
     Text text_duration{
         {11 * 8, 1 * 16, 6 * 8, 16},
